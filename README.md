@@ -12,4 +12,3 @@ structs into a new struct.
 # Contributors
 
 * Dan Hable <dan@danhable.com>
-* 
