@@ -1,5 +1,5 @@
 use crate::{Merge, MergeMut};
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashSet, LinkedList};
 use std::hash::Hash;
 use std::vec::Vec;
 
@@ -57,6 +57,24 @@ impl<T: Clone + Eq + Ord> MergeMut for BTreeSet<T> {
     }
 }
 
+/// Implementation of Merge for LinkedList type. The resulting LinkedList is a new list
+/// with all the elements from the target list followed by all of the elements from the
+/// right hand side list.
+impl<T: Clone> Merge for LinkedList<T> {
+    fn merge(&self, rhs: &Self) -> Self {
+        let mut res = self.clone();
+        res.merge_mut(rhs);
+        res
+    }
+}
+
+impl<T: Clone> MergeMut for LinkedList<T> {
+    fn merge_mut(&mut self, rhs: &Self) {
+        let mut rhs = rhs.clone();
+        self.append(&mut rhs);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,6 +109,40 @@ mod tests {
         vec![1, 2, 3, 4],
         vec![3, 4, 5, 6],
         vec![1, 2, 3, 4, 3, 4, 5, 6]
+    );
+
+    /****************************************************************************
+     * Vec Test Cases
+     ****************************************************************************/
+    merge_test!(
+        linkedlist_both_values,
+        LinkedList::from([1, 2, 3]),
+        LinkedList::from([4, 5]),
+        LinkedList::from([1, 2, 3, 4, 5])
+    );
+    merge_test!(
+        linkedlist_target_empty,
+        LinkedList::new(),
+        LinkedList::from([4, 5]),
+        LinkedList::from([4, 5])
+    );
+    merge_test!(
+        linkedlist_rhs_empty,
+        LinkedList::from([1, 2, 3]),
+        LinkedList::new(),
+        LinkedList::from([1, 2, 3])
+    );
+    merge_test!(
+        linkedlist_both_empty,
+        LinkedList::<usize>::new(),
+        LinkedList::new(),
+        LinkedList::new()
+    );
+    merge_test!(
+        linkedlist_duplicates,
+        LinkedList::from([1, 2, 3]),
+        LinkedList::from([2, 3, 4]),
+        LinkedList::from([1, 2, 3, 2, 3, 4])
     );
 
     /****************************************************************************
