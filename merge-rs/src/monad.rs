@@ -16,9 +16,9 @@ impl<T: Clone + Merge> Merge for Option<T> {
     fn merge(&self, rhs: &Self) -> Self {
         match (self, rhs) {
             (Some(left), Some(right)) => Some(left.merge(right)),
-            (Some(left), _) => Some(left.clone()),
-            (_, Some(right)) => Some(right.clone()),
-            _ => None,
+            (Some(left), None) => Some(left.clone()),
+            (None, Some(right)) => Some(right.clone()),
+            (None, None) => None,
         }
     }
 }
@@ -34,5 +34,65 @@ impl<T: Clone + Merge, E: Clone + Merge> Merge for Result<T, E> {
             (_, Err(right)) => Err(right.clone()),
             (Ok(left), Ok(right)) => Ok(left.merge(right)),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone)]
+    struct MergeSpy(bool);
+
+    impl MergeSpy {
+        fn new() -> Self {
+            MergeSpy(false)
+        }
+
+        fn is_merge_called(&self) -> bool {
+            self.0
+        }
+    }
+
+    impl Merge for MergeSpy {
+        fn merge(&self, _: &Self) -> Self {
+            MergeSpy(true)
+        }
+    }
+
+    #[test]
+    fn test_option_merge_both_none() {
+        let left: Option<MergeSpy> = None;
+        let right: Option<MergeSpy> = None;
+
+        let actual = left.merge(&right);
+        assert!(actual.is_none());
+    }
+
+    #[test]
+    fn test_option_merge_left_none() {
+        let left = None;
+        let right = Some(MergeSpy::new());
+
+        let actual = left.merge(&right);
+        assert!(matches!(actual, Some(res) if !res.is_merge_called()));
+    }
+
+    #[test]
+    fn test_option_merge_right_none() {
+        let left = Some(MergeSpy::new());
+        let right = None;
+
+        let actual = left.merge(&right);
+        assert!(matches!(actual, Some(res) if !res.is_merge_called()));
+    }
+
+    #[test]
+    fn test_option_merge_both_some() {
+        let left = Some(MergeSpy::new());
+        let right = Some(MergeSpy::new());
+
+        let actual = left.merge(&right);
+        assert!(matches!(actual, Some(res) if res.is_merge_called()));
     }
 }
