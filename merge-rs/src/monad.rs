@@ -42,21 +42,29 @@ mod tests {
     use super::*;
 
     #[derive(Clone)]
-    struct MergeSpy(bool);
+    struct MergeSpy(&'static str, bool);
 
     impl MergeSpy {
         fn new() -> Self {
-            MergeSpy(false)
+            Self::with_label("spy")
+        }
+
+        fn with_label(label: &'static str) -> Self {
+            MergeSpy(label, false)
         }
 
         fn is_merge_called(&self) -> bool {
+            self.1
+        }
+
+        fn label(&self) -> &str {
             self.0
         }
     }
 
     impl Merge for MergeSpy {
         fn merge(&self, _: &Self) -> Self {
-            MergeSpy(true)
+            MergeSpy("merged", true)
         }
     }
 
@@ -94,5 +102,41 @@ mod tests {
 
         let actual = left.merge(&right);
         assert!(matches!(actual, Some(res) if res.is_merge_called()));
+    }
+
+    #[test]
+    fn test_result_merge_left_err() {
+        let left = Err(MergeSpy::with_label("left"));
+        let right = Ok(MergeSpy::with_label("right"));
+
+        let actual = left.merge(&right);
+        assert!(matches!(actual, Err(res) if res.label() == "left" && !res.is_merge_called()));
+    }
+
+    #[test]
+    fn test_result_merge_left_both_err() {
+        let left: Result<MergeSpy, MergeSpy> = Err(MergeSpy::with_label("left"));
+        let right: Result<MergeSpy, MergeSpy> = Err(MergeSpy::with_label("right"));
+
+        let actual = left.merge(&right);
+        assert!(matches!(actual, Err(res) if res.label() == "left" && !res.is_merge_called()));
+    }
+
+    #[test]
+    fn test_result_merge_right_err() {
+        let left = Ok(MergeSpy::with_label("left"));
+        let right = Err(MergeSpy::with_label("right"));
+
+        let actual = left.merge(&right);
+        assert!(matches!(actual, Err(res) if res.label() == "right" && !res.is_merge_called()));
+    }
+
+    #[test]
+    fn test_result_merge_both_ok() {
+        let left: Result<MergeSpy, MergeSpy> = Ok(MergeSpy::with_label("left"));
+        let right: Result<MergeSpy, MergeSpy> = Ok(MergeSpy::with_label("right"));
+
+        let actual = left.merge(&right);
+        assert!(matches!(actual, Ok(res) if res.is_merge_called()));
     }
 }
