@@ -1,0 +1,25 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - v[0-9]+.*
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo package
+        working-directory: merge-rs
+      - uses: taiki-e/create-gh-release-action@v1
+        with:        
+          # (Required) GitHub token for creating GitHub Releases.
+          title: $version
+          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
