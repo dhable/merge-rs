@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo package
+      - run: cargo package --locked
         working-directory: merge-rs
       - uses: taiki-e/create-gh-release-action@v1
         with:        
@@ -23,3 +23,7 @@ jobs:
           branch: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: cargo publish --locked
+        working-directory: merge-rs
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

@@ -19,9 +19,13 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: cargo build --verbose
+      working-directory: merge-rs
     - name: Run tests
       run: cargo test --verbose
+      working-directory: merge-rs
     - name: Run clippy
       run: cargo clippy --all-targets --all-features -- -D warnings
+      working-directory: merge-rs
     - name: Run audit
       run: cargo audit --deny warnings --deny unmaintained --deny unsound --deny yanked
+      working-directory: merge-rs
