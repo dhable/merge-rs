@@ -1,5 +1,5 @@
 use crate::{Merge, MergeMut};
-use std::collections::{BTreeSet, HashSet, LinkedList};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, LinkedList};
 use std::hash::Hash;
 use std::vec::Vec;
 
@@ -57,6 +57,63 @@ impl<T: Clone + Eq + Ord> MergeMut for BTreeSet<T> {
     }
 }
 
+/// Implementation of Merge for the HashMap type. The resulting HashMap is the union
+/// of elements from the target HashMap and the right hand side HashMap. Where the same
+/// key appears in both HashMaps, the resulting value is the value from target HashMap
+/// merged with the value from the right hand side.
+impl<K: Clone + Eq + Hash, V: Clone + Eq + Merge> Merge for HashMap<K, V> {
+    fn merge(&self, rhs: &Self) -> Self {
+        let mut res = self.clone();
+        for (rhs_key, rhs_val) in rhs.iter() {
+            let new_val = match res.get(rhs_key) {
+                None => rhs_val.clone(),
+                Some(existing_val) => existing_val.merge(rhs_val),
+            };
+            res.insert(rhs_key.clone(), new_val);
+        }
+        res
+    }
+}
+
+impl<K: Clone + Eq + Hash, V: Clone + Eq + MergeMut> MergeMut for HashMap<K, V> {
+    fn merge_mut(&mut self, other: &Self) {
+        for (other_key, other_val) in other.iter() {
+            self.entry(other_key.clone())
+                .and_modify(|self_val| self_val.merge_mut(other_val))
+                .or_insert_with(|| other_val.clone());
+        }
+    }
+}
+
+/// Implementation of Merge for the BTreeMap type. The resulting BTreeMap is the union
+/// of elements from the target BTreeMap and the right hand side BTreeMap. Where the same
+/// key appears in both BTreeMaps, the resulting value is the value from target BTreeMap
+/// merged with the value from the right hand side.
+impl<K: Clone + Eq + Hash + Ord, V: Clone + Eq + Merge> Merge for BTreeMap<K, V> {
+    fn merge(&self, rhs: &Self) -> Self {
+        let mut res = self.clone();
+        for (rhs_key, rhs_val) in rhs.iter() {
+            let new_val = match res.get(rhs_key) {
+                None => rhs_val.clone(),
+                Some(existing_val) => existing_val.merge(rhs_val),
+            };
+            res.insert(rhs_key.clone(), new_val);
+        }
+        res
+    }
+}
+
+
+impl<K: Clone + Eq + Hash + Ord, V: Clone + Eq + MergeMut> MergeMut for BTreeMap<K, V> {
+    fn merge_mut(&mut self, other: &Self) {
+        for (other_key, other_val) in other.iter() {
+            self.entry(other_key.clone())
+                .and_modify(|self_val| self_val.merge_mut(other_val))
+                .or_insert_with(|| other_val.clone());
+        }
+    }
+}
+
 /// Implementation of Merge for LinkedList type. The resulting LinkedList is a new list
 /// with all the elements from the target list followed by all of the elements from the
 /// right hand side list.
@@ -90,6 +147,12 @@ mod tests {
                 }
             });
         };
+    }
+
+    impl Merge for usize {
+        fn merge(&self, rhs: &Self) -> Self {
+            self + rhs
+        }
     }
 
     /****************************************************************************
@@ -211,5 +274,73 @@ mod tests {
         BTreeSet::from([1, 2, 3]),
         BTreeSet::from([3, 4, 5]),
         BTreeSet::from([1, 2, 3, 4, 5])
+    );
+
+    /****************************************************************************
+     * HashMap Test Cases
+     ****************************************************************************/
+    merge_test!(
+        hashmap_both_empty,
+        HashMap::<String, usize>::new(),
+        HashMap::new(),
+        HashMap::new()
+    );
+    merge_test!(
+        hashmap_lhs_empty,
+        HashMap::from([("a", 1), ("b", 2)]),
+        HashMap::new(),
+        HashMap::from([("a", 1), ("b", 2)])
+    );
+    merge_test!(
+        hashmap_rhs_empty,
+        HashMap::new(),
+        HashMap::from([("c", 1), ("d", 2)]),
+        HashMap::from([("c", 1), ("d", 2)])
+    );
+    merge_test!(
+        hashmap_no_overlapping_keys,
+        HashMap::from([("a", 1), ("b", 2)]),
+        HashMap::from([("c", 1), ("d", 2)]),
+        HashMap::from([("a", 1), ("b", 2), ("c", 1), ("d", 2)])
+    );
+    merge_test!(
+        hashmap_overlapping_keys,
+        HashMap::from([("a", 1), ("b", 2), ("c", 3)]),
+        HashMap::from([("c", 10), ("d", 20)]),
+        HashMap::from([("a", 1), ("b", 2), ("c", 13), ("d", 20)])
+    );
+
+    /****************************************************************************
+     * BTreeMap Test Cases
+     ****************************************************************************/
+    merge_test!(
+        btreemap_both_empty,
+        BTreeMap::<String, usize>::new(),
+        BTreeMap::new(),
+        BTreeMap::new()
+    );
+    merge_test!(
+        btreemap_lhs_empty,
+        BTreeMap::from([("a", 1), ("b", 2)]),
+        BTreeMap::new(),
+        BTreeMap::from([("a", 1), ("b", 2)])
+    );
+    merge_test!(
+        btreemap_rhs_empty,
+        BTreeMap::new(),
+        BTreeMap::from([("c", 1), ("d", 2)]),
+        BTreeMap::from([("c", 1), ("d", 2)])
+    );
+    merge_test!(
+        btreemap_no_overlapping_keys,
+        BTreeMap::from([("a", 1), ("b", 2)]),
+        BTreeMap::from([("c", 1), ("d", 2)]),
+        BTreeMap::from([("a", 1), ("b", 2), ("c", 1), ("d", 2)])
+    );
+    merge_test!(
+        btreemap_overlapping_keys,
+        BTreeMap::from([("a", 1), ("b", 2), ("c", 3)]),
+        BTreeMap::from([("c", 10), ("d", 20)]),
+        BTreeMap::from([("a", 1), ("b", 2), ("c", 13), ("d", 20)])
     );
 }
