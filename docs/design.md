@@ -5,7 +5,6 @@ complex structs into a new version based on rules defined in code. The API and
 desired behaviors are largely influenced by the [Semigroup type class][2] from the
 [Scala cats library][1].
 
-
 ## Problem
 
 Rust's struct type allows us to model complex data structures that consists of
@@ -21,7 +20,6 @@ One would naturally like to have these different instances of configuration merg
 into a single representation with a minimal amount of code. Those configurations
 could either be modeled as `Hashmap` instances at the loss of compile time type
 checks or we could be left to write a large amount of boiler plate code.
-
 
 ## Goals
 
@@ -56,7 +54,6 @@ Even with default implementations, there are going to be times when a specific f
 even of the same type, might need a different strategy. It should be possible without
 too much effort to support such a case.
 
-
 ## Solution
 
 The heart of `merge-rs` consists is a pair of traits with a single method each - `Merge`
@@ -69,47 +66,15 @@ two goals. We encourage writing immutable code as much as possible for higher le
 applications but provide a means to support lower level, mutable implementations when
 needed.
 
-To support sane defaults for built-in types while providing a fine grain control over
-the strategy, `merge-rs` provides the `Mergable` type class. To use the default built-in
-implementations, you simply need to wrap the field type with `Mergable` and continue to
-use the type as normal.
+Derive macros have been added to the crate to reduce the boilerplate code that needs
+to be written. Beyond just calling `merge` or `merge_mut` on each field, the derive
+macro allows skipping fields or defining a function to use for merging. This provides
+flexibility that allows `merge-rs` to be used on types where it is not possible to provide
+a trait implementation - e.g. externally defined types.
 
-```rust
-struct ConfigType {
-    max_count: Mergable<usize>,
-    // ....
-}
-
-impl ConfigType {
-    fn new(max_count: usize) -> ConfigType {
-        Self {
-            max_count: Mergable::new(max_count),
-            // ...
-        }
-    }
-}
-
-impl Merge for ConfigType {
-    fn merge(&self, rhs: &Self) -> Self {
-        ConfigType {
-            max_count: self.max_count.merge(rhs.max_count),
-            // ....
-        }
-    }
-}
-```
-
-The `Mergable` type class implements all of rust's `std::ops` traits so it behaves
-like a silent wrapper, similar to the `Box` trait. This does mean that the type class
-is exposed throughout the application code. To avoid this, you can simply define the
-`merge` trait manually.
-
-This also provides the ability to define a merge strategy as a second argument
-to `Mergable::new`, which is simply a function that takes a left and right reference
-and returns a value that consists of the merged value. This could be as simple as a
-function that is bias towards it's left argument, i.e. always returns the left argument,
-or it could do something more involved.
-
+Two common cases, `Result` and `Option`, do have standard implementations for `Merge`.
+The behavior of these types is modeled after the [Scala cats][1] implementation. Users
+who wish to have a different behavior can always define a merge strategy function instead.
 
 ## Inspiration and Prior Art
 
@@ -124,5 +89,7 @@ a similar design.
 
 
 [1]: https://typelevel.org/cats
+
 [2]: https://typelevel.org/cats/typeclasses/semigroup.html
+
 [3]: https://crates.io/crates/merge
