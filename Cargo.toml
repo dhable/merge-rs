@@ -4,12 +4,13 @@ description = "A small library that cuts down on the amount of code required to 
 repository = "https://github.com/dhable/merge-rs"
 version = "0.3.0"
 edition = "2021"
-rust-version = "1.58.1"
+rust-version = "1.68.2"
 license = "MIT"
-readme = "../README.md"
+readme = "README.md"
 
 [dependencies]
 derivative = "2.2.0"
+merge-derive = { version = "0.4.0", path = "merge-derive" }
 
 [dev-dependencies]
 concat-idents = "1.1.3"
