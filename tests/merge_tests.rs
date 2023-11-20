@@ -1,5 +1,4 @@
 use merge_rs::{Merge};
-use merge_derive::{Merge};
 
 fn concat_string(lhs: &str, rhs: &String) -> Result<String, Box<dyn std::error::Error>> {
     Ok(lhs.to_owned() + rhs)

@@ -47,6 +47,8 @@ impl<T: Clone + Merge, E: Clone + Merge> Merge for Result<T, E> {
     }
 }
 
+pub use merge_rs_derive::{Merge, MergeMut};
+
 #[cfg(test)]
 mod tests {
     use super::*;
