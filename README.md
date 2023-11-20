@@ -7,7 +7,7 @@ structs into a new struct.
 
 ```
 [dependencies]
-merge-rs = "0.3"
+merge-rs = "0.4"
 ```
 
 ## Example
