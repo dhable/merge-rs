@@ -2,7 +2,7 @@
 name = "merge-rs"
 description = "A small library that cuts down on the amount of code required to merge two arbitrary structs into a new struct."
 repository = "https://github.com/dhable/merge-rs"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 rust-version = "1.68.2"
 license = "MIT"
