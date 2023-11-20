@@ -24,7 +24,7 @@ readme.workspace = true
 
 [dependencies]
 derivative = "2.2.0"
-merge-rs-derive = { path = "./merge-rs-derive" }
+merge-rs-derive = { path = "./merge-rs-derive", version = "0.4.0" }
 
 [dev-dependencies]
 concat-idents = "1.1.3"
