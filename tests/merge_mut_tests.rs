@@ -1,5 +1,4 @@
 use merge_rs::{MergeMut};
-use merge_derive::{MergeMut};
 
 fn concat_string(lhs: &mut String, rhs: &str) {
     lhs.push_str(rhs);

@@ -1,5 +1,8 @@
-[package]
-name = "merge-rs"
+[workspace]
+members = ["merge-rs-derive"]
+
+[workspace.package]
+authors = ["Dan Hable <dan@danhable.com>"]
 description = "A small library that cuts down on the amount of code required to merge two arbitrary structs into a new struct."
 repository = "https://github.com/dhable/merge-rs"
 version = "0.3.0"
@@ -8,9 +11,20 @@ rust-version = "1.68.2"
 license = "MIT"
 readme = "README.md"
 
+[package]
+name = "merge-rs"
+authors.workspace = true
+description.workspace = true
+repository.workspace = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+readme.workspace = true
+
 [dependencies]
 derivative = "2.2.0"
-merge-derive = { version = "0.4.0", path = "merge-derive" }
+merge-rs-derive = { path = "./merge-rs-derive" }
 
 [dev-dependencies]
 concat-idents = "1.1.3"
