@@ -1,14 +1,13 @@
-use proc_macro::TokenStream;
-use proc_macro2::Span;
-use quote::quote;
-use syn::{parse_macro_input, Ident};
 use darling::{ast, util, FromDeriveInput, FromField};
+use proc_macro::TokenStream;
+use quote::{quote, quote_spanned};
+use syn::{parse_macro_input, spanned::Spanned, Ident};
 
 #[derive(Debug, FromField)]
 #[darling(attributes(merge_field))]
 struct MergeField {
     ident: Option<Ident>,
-    strategy: Option<String>,
+    strategy: Option<syn::Path>,
     #[darling(default)]
     skip: bool,
 }
@@ -45,11 +44,7 @@ fn gen_field_lines(
     res
 }
 
-fn do_derive(
-    input: TokenStream,
-    gen_field: FieldGenFn,
-    gen_trait: TraitGenFn,
-) -> TokenStream {
+fn do_derive(input: TokenStream, gen_field: FieldGenFn, gen_trait: TraitGenFn) -> TokenStream {
     let parsed = parse_macro_input!(input);
     match MergeTarget::from_derive_input(&parsed) {
         Err(e) => e.write_errors(),
@@ -58,26 +53,22 @@ fn do_derive(
             let fields = gen_field_lines(target.data.take_struct(), gen_field);
             gen_trait(target_ident, fields)
         }
-    }.into()
+    }
+    .into()
 }
 
 #[proc_macro_derive(MergeMut, attributes(merge_field))]
 pub fn derive_merge_mut(input: TokenStream) -> TokenStream {
     do_derive(
         input,
-        |field, field_token| {
-            match field.strategy {
-                _ if field.skip => None,
-                None => Some(quote! {
-                    self.#field_token.merge_mut(&other.#field_token)?;
-                }),
-                Some(strategy) => {
-                    let strategy_fn = Ident::new(&strategy, Span::call_site());
-                    Some(quote! {
-                        #strategy_fn(&mut self.#field_token, &other.#field_token); // TODO: bug here?
-                    })
-                }
-            }
+        |field, field_token| match field.strategy {
+            _ if field.skip => None,
+            None => Some(quote! {
+                self.#field_token.merge_mut(&other.#field_token)?;
+            }),
+            Some(strategy) => Some(
+                quote_spanned!(strategy.span() => #strategy(&mut self.#field_token, &other.#field_token)?;),
+            ),
         },
         |target, fields| {
             quote! {
@@ -88,28 +79,24 @@ pub fn derive_merge_mut(input: TokenStream) -> TokenStream {
                     }
                 }
             }
-        })
+        },
+    )
 }
 
 #[proc_macro_derive(Merge, attributes(merge_field))]
 pub fn derive_merge(input: TokenStream) -> TokenStream {
     do_derive(
         input,
-        |field, field_token| {
-            match field.strategy {
-                _ if field.skip => Some(quote! {
-                    #field_token: self.#field_token.clone(),
-                }),
-                None => Some(quote! {
-                    #field_token: self.#field_token.merge(&other.#field_token)?,
-                }),
-                Some(strategy) => {
-                    let strategy_fn = Ident::new(&strategy, Span::call_site());
-                    Some(quote! {
-                        #field_token: #strategy_fn(&self.#field_token, &other.#field_token)?,
-                    })
-                }
-            }
+        |field, field_token| match field.strategy {
+            _ if field.skip => Some(quote! {
+                #field_token: self.#field_token.clone(),
+            }),
+            None => Some(quote! {
+                #field_token: self.#field_token.merge(&other.#field_token)?,
+            }),
+            Some(strategy) => Some(quote! {
+                #field_token: quote_spanned!(strategy.span() => #strategy(&mut self.#field_token, &other.#field_token)?;)
+            }),
         },
         |target, fields| {
             quote! {

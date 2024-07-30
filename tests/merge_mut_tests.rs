@@ -1,17 +1,23 @@
-use merge_rs::{MergeMut};
+use merge_rs::MergeMut;
 
-fn concat_string(lhs: &mut String, rhs: &str) {
+fn concat_string(lhs: &mut String, rhs: &str) -> Result<(), Box<dyn std::error::Error>> {
     lhs.push_str(rhs);
+    Ok(())
 }
 
-fn sum<T: std::ops::AddAssign + Copy>(lhs: &mut T, rhs: &T) {
+fn sum<T: std::ops::AddAssign + Copy>(
+    lhs: &mut T,
+    rhs: &T,
+) -> Result<(), Box<dyn std::error::Error>> {
     *lhs += *rhs;
+    Ok(())
 }
 
-fn max<T: PartialOrd + Copy>(lhs: &mut T, rhs: &T) {
+fn max<T: PartialOrd + Copy>(lhs: &mut T, rhs: &T) -> Result<(), Box<dyn std::error::Error>> {
     if *lhs < *rhs {
         *lhs = *rhs;
     }
+    Ok(())
 }
 
 #[derive(Debug, MergeMut)]
@@ -83,16 +89,24 @@ struct TupleStruct(
 
 #[test]
 fn test_tuple_struct() {
-    let mut left = TupleStruct(789, 1700319581526, NestedStruct {
-        name: "C".to_string(),
-        name_len: 1,
-        age: 5,
-    });
-    let right = TupleStruct(987, 1700319612124, NestedStruct {
-        name: "DD".to_string(),
-        name_len: 2,
-        age: 65,
-    });
+    let mut left = TupleStruct(
+        789,
+        1700319581526,
+        NestedStruct {
+            name: "C".to_string(),
+            name_len: 1,
+            age: 5,
+        },
+    );
+    let right = TupleStruct(
+        987,
+        1700319612124,
+        NestedStruct {
+            name: "DD".to_string(),
+            name_len: 2,
+            age: 65,
+        },
+    );
     left.merge_mut(&right).expect("merge should be successful");
     assert_eq!(left.0, 789);
     assert_eq!(left.1, 1700319612124);

@@ -36,3 +36,4 @@ fn main() {
 # Contributors
 
 * Dan Hable <dan@danhable.com>
+* Denis Dengler <denis.dengler@dendevel.de>
